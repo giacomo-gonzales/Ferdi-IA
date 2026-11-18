@@ -1,0 +1,1256 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ferdi IA | Tutor de Corriente Alterna</title>
+
+
+<!-- Interpretación de Markdown -->
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+
+<!-- Protección del HTML generado -->
+<script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+<!-- Configuración de MathJax -->
+<script>
+window.MathJax = {
+    tex: {
+        inlineMath: [
+            ['\\(', '\\)'],
+            ['$','$']
+        ],
+        displayMath: [
+            ['\\[', '\\]'],
+            ['$$', '$$']
+        ],
+        processEscapes: true
+    },
+    options: {
+        skipHtmlTags: [
+            'script', 'noscript', 'style',
+            'textarea', 'pre', 'code'
+        ]
+    }
+};
+</script>
+
+<!-- Motor de fórmulas matemáticas -->
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+
+<style>
+:root {
+    --bg: #090d18;
+    --panel: #111827;
+    --surface: #172033;
+    --border: #29364d;
+    --text: #edf2ff;
+    --muted: #9aa9c2;
+    --accent: #38bdf8;
+    --purple: #8b5cf6;
+    --green: #34d399;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: Arial, sans-serif;
+}
+
+header {
+    background: var(--panel);
+    border-bottom: 1px solid var(--border);
+    padding: 18px 25px;
+}
+
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.logo {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #0284c7, #7c3aed);
+    font-size: 22px;
+    font-weight: bold;
+}
+
+h1 { margin: 0; font-size: 21px; }
+
+.subtitle {
+    color: var(--muted);
+    font-size: 12px;
+    margin-top: 5px;
+}
+
+.layout {
+    max-width: 1450px;
+    margin: auto;
+    padding: 22px;
+    display: grid;
+    grid-template-columns: minmax(0, 1.6fr) minmax(300px, 0.8fr);
+    gap: 20px;
+}
+
+.panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px;
+    min-width: 0;
+}
+
+.panel-title {
+    font-size: 17px;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.description {
+    color: var(--muted);
+    font-size: 13px;
+    margin-bottom: 18px;
+}
+
+.controls {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-bottom: 15px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+label {
+    color: var(--muted);
+    font-size: 12px;
+}
+
+select, input[type="number"] {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px;
+    border-radius: 8px;
+}
+
+#chat {
+    height: 480px;
+    overflow-y: auto;
+    background: #0b1220;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.message {
+    max-width: 88%;
+    padding: 12px 14px;
+    margin: 12px 0;
+    border-radius: 12px;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.message.user {
+    margin-left: auto;
+    background: #174b82;
+}
+
+
+.message.assistant {
+    background: #1b2940;
+    border: 1px solid #30425e;
+    white-space: normal;
+}
+
+/* Fórmulas matemáticas */
+.message.assistant mjx-container {
+    color: #edf2ff;
+    max-width: 100%;
+    overflow-x: auto;
+    overflow-y: hidden;
+}
+
+/* Tablas de las respuestas */
+.message.assistant table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+    margin: 12px 0;
+}
+
+.message.assistant th,
+.message.assistant td {
+    border: 1px solid #40516b;
+    padding: 8px 10px;
+    text-align: left;
+}
+
+.message.assistant th {
+    background: #26354c;
+}
+
+.message.assistant p {
+    margin: 9px 0;
+}
+
+.message.assistant pre {
+    overflow-x: auto;
+    background: #0b1220;
+    padding: 12px;
+    border-radius: 8px;
+}
+
+
+.message.system {
+    margin: 10px auto;
+    text-align: center;
+    color: var(--muted);
+    font-size: 12px;
+}
+
+.composer {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+}
+
+#prompt {
+    flex: 1;
+    min-width: 0;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 13px;
+    color: white;
+    font-size: 14px;
+}
+
+button {
+    border: none;
+    border-radius: 9px;
+    padding: 11px 16px;
+    background: linear-gradient(135deg, #0284c7, #7c3aed);
+    color: white;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+button:hover { filter: brightness(1.15); }
+button:disabled { opacity: .5; cursor: not-allowed; }
+.secondary { background: #26354c; }
+
+.quick-prompts {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+.quick-prompts button {
+    font-size: 11px;
+    padding: 9px 11px;
+    background: #24334b;
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 230px;
+    background: #0b1220;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.slider-field { margin: 18px 0; }
+
+.slider-field input {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.slider-label {
+    display: flex;
+    justify-content: space-between;
+    gap: 10px;
+    font-size: 13px;
+    margin-bottom: 8px;
+}
+
+.results {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.result {
+    background: var(--surface);
+    padding: 13px;
+    border-radius: 9px;
+    min-width: 0;
+}
+
+.result small {
+    display: block;
+    color: var(--muted);
+    margin-bottom: 7px;
+}
+
+.result strong {
+    color: var(--green);
+    font-size: 17px;
+    overflow-wrap: anywhere;
+}
+
+.tip {
+    background: #132d40;
+    border: 1px solid #24516b;
+    padding: 12px;
+    border-radius: 9px;
+    color: #c9eaff;
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 15px;
+}
+
+footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 11px;
+    padding: 20px;
+}
+
+.extra-lab {
+    margin-top: 20px;
+    padding-top: 18px;
+    border-top: 1px solid var(--border);
+}
+
+.extra-lab canvas { margin-top: 12px; }
+
+.lab-control { margin: 13px 0; }
+
+.lab-control .slider-label { margin-bottom: 7px; }
+
+.lab-control input[type="range"] {
+    width: 100%;
+    accent-color: var(--accent);
+}
+
+.lab-control select {
+    width: 100%;
+    margin-top: 6px;
+}
+
+.lab-note {
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.5;
+    margin-top: 10px;
+}
+
+@media (max-width: 850px) {
+    .layout {
+        grid-template-columns: 1fr;
+        padding: 12px;
+    }
+
+    #chat { height: 420px; }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <div class="brand">
+        <div class="logo">F</div>
+        <div>
+            <h1>Ferdi IA</h1>
+            <div class="subtitle">Tutor inteligente de Física | Corriente Alterna</div>
+        </div>
+    </div>
+</header>
+
+<main class="layout">
+
+    <!-- CHAT PRINCIPAL -->
+    <section class="panel">
+        <div class="panel-title">Asistente de Física</div>
+        <div class="description">
+            Aprende, consulta teoría y resuelve problemas de corriente alterna.
+        </div>
+
+        <div class="controls">
+            <div class="field">
+                <label for="mode">Modo de aprendizaje</label>
+                <select id="mode">
+                    <option value="both">Tutor completo</option>
+                    <option value="theory">Teoría</option>
+                    <option value="solve">Resolver ejercicios</option>
+                    <option value="practice">Práctica guiada</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="model">Modelo de IA</label>
+                <select id="model">
+                    <option value="openai/gpt-oss-20b">GPT-OSS 20B</option>
+                    <option value="openai/gpt-oss-120b">GPT-OSS 120B</option>
+                </select>
+            </div>
+
+            <div class="field">
+                <label for="temperature">Creatividad</label>
+                <input id="temperature" type="number"
+                    min="0" max="2" step="0.1" value="0.4">
+            </div>
+
+            <div class="field">
+                <label for="maxTokens">Máx. tokens</label>
+                <input id="maxTokens" type="number"
+                    min="64" max="4096" value="1500">
+            </div>
+        </div>
+
+        <div id="chat" aria-live="polite">
+            <div class="message assistant">¡Hola! Soy Ferdi IA, tu tutor de Física especializado en Corriente Alterna.
+
+Puedo ayudarte con:
+• Conceptos y fundamentos de CA.
+• Ondas sinusoidales.
+• Período y frecuencia.
+• Voltaje y corriente eficaz.
+• Reactancia inductiva y capacitiva.
+• Impedancia y circuitos RLC.
+• Factor de potencia.
+• Resolución de ejercicios paso a paso.
+
+¿Qué tema quieres aprender?</div>
+        </div>
+
+        <div class="composer">
+            <input id="prompt" type="text"
+                placeholder="Escribe tu pregunta de Física..."
+                autocomplete="off">
+            <button id="send">Enviar</button>
+        </div>
+
+        <div class="quick-prompts">
+            <button data-prompt="Explícame qué es la corriente alterna desde cero.">
+                ¿Qué es la CA?
+            </button>
+            <button data-prompt="Explícame la diferencia entre frecuencia y período.">
+                Frecuencia y período
+            </button>
+            <button data-prompt="Enséñame cómo calcular el voltaje eficaz.">
+                Voltaje eficaz
+            </button>
+            <button data-prompt="Dame un ejercicio universitario de corriente alterna y resuélvelo paso a paso.">
+                Ejercicio resuelto
+            </button>
+        </div>
+
+        <div style="display:flex;justify-content:flex-end;margin-top:12px">
+            <button class="secondary" id="clear">Limpiar conversación</button>
+        </div>
+    </section>
+
+    <!-- LABORATORIO -->
+    <aside class="panel">
+        <div class="panel-title">Laboratorio de CA</div>
+        <div class="description">
+            Experimenta con una señal sinusoidal y observa cómo cambian sus valores.
+        </div>
+
+        <canvas id="waveCanvas"></canvas>
+
+        <div class="slider-field">
+            <div class="slider-label">
+                <label for="amplitude">Voltaje máximo (Vm)</label>
+                <strong id="amplitudeValue">10 V</strong>
+            </div>
+            <input id="amplitude" type="range" min="1" max="100" value="10">
+        </div>
+
+        <div class="slider-field">
+            <div class="slider-label">
+                <label for="frequency">Frecuencia (f)</label>
+                <strong id="frequencyValue">60 Hz</strong>
+            </div>
+            <input id="frequency" type="range" min="1" max="120" value="60">
+        </div>
+
+        <div class="slider-field">
+            <div class="slider-label">
+                <label for="phase">Fase inicial (φ)</label>
+                <strong id="phaseValue">0°</strong>
+            </div>
+            <input id="phase" type="range" min="0" max="360" value="0">
+        </div>
+
+        <div class="results">
+            <div class="result">
+                <small>Período (T)</small>
+                <strong id="periodResult">0.0167 s</strong>
+            </div>
+            <div class="result">
+                <small>Frecuencia angular (ω)</small>
+                <strong id="omegaResult">376.99 rad/s</strong>
+            </div>
+            <div class="result">
+                <small>Voltaje eficaz (Vrms)</small>
+                <strong id="rmsResult">7.07 V</strong>
+            </div>
+            <div class="result">
+                <small>Frecuencia (f)</small>
+                <strong id="frequencyResult">60 Hz</strong>
+            </div>
+        </div>
+
+        <div class="tip">
+            <strong>Fórmulas utilizadas</strong><br>
+            T = 1 / f<br>
+            ω = 2πf<br>
+            Vrms = Vm / √2<br>
+            v(t) = Vm · sen(ωt + φ)
+        </div>
+
+        <!-- DIAGRAMA FASORIAL -->
+        <section class="extra-lab">
+            <div class="panel-title">Diagrama fasorial</div>
+            <div class="description">
+                Compara la fase del voltaje respecto a la corriente.
+            </div>
+
+            <div class="lab-control">
+                <label for="phasorType">Tipo de elemento</label>
+                <select id="phasorType">
+                    <option value="R">Resistencia ideal</option>
+                    <option value="L">Inductancia ideal</option>
+                    <option value="C">Capacitancia ideal</option>
+                    <option value="RL">Circuito RL serie</option>
+                    <option value="RC">Circuito RC serie</option>
+                    <option value="RLC">Circuito RLC serie</option>
+                </select>
+            </div>
+
+            <canvas id="phasorCanvas"></canvas>
+
+            <div class="results">
+                <div class="result">
+                    <small>Ángulo de impedancia</small>
+                    <strong id="phasorAngle">0°</strong>
+                </div>
+                <div class="result">
+                    <small>Relación de fase</small>
+                    <strong id="phasorRelation">En fase</strong>
+                </div>
+            </div>
+
+            <div class="lab-note">
+                La corriente se toma como referencia horizontal (0°).
+                En una resistencia, V e I están en fase; en una inductancia
+                ideal, V adelanta 90°; en un capacitor ideal, V atrasa 90°.
+            </div>
+        </section>
+
+        <!-- SIMULADOR RLC -->
+        <section class="extra-lab">
+            <div class="panel-title">Simulador RLC serie</div>
+            <div class="description">
+                Modifica los componentes y observa cómo cambia la impedancia.
+            </div>
+
+            <div class="lab-control">
+                <div class="slider-label">
+                    <label for="rlcR">Resistencia (R)</label>
+                    <strong id="rlcRValue">10 Ω</strong>
+                </div>
+                <input id="rlcR" type="range" min="1" max="100" value="10">
+            </div>
+
+            <div class="lab-control">
+                <div class="slider-label">
+                    <label for="rlcL">Inductancia (L)</label>
+                    <strong id="rlcLValue">100 mH</strong>
+                </div>
+                <input id="rlcL" type="range" min="1" max="500" value="100">
+            </div>
+
+            <div class="lab-control">
+                <div class="slider-label">
+                    <label for="rlcC">Capacitancia (C)</label>
+                    <strong id="rlcCValue">100 μF</strong>
+                </div>
+                <input id="rlcC" type="range" min="1" max="1000" value="100">
+            </div>
+
+            <div class="lab-control">
+                <div class="slider-label">
+                    <label for="rlcF">Frecuencia (f)</label>
+                    <strong id="rlcFValue">50 Hz</strong>
+                </div>
+                <input id="rlcF" type="range" min="1" max="200" value="50">
+            </div>
+
+            <canvas id="rlcCanvas"></canvas>
+
+            <div class="results">
+                <div class="result">
+                    <small>XL</small>
+                    <strong id="rlcXL">31.42 Ω</strong>
+                </div>
+                <div class="result">
+                    <small>XC</small>
+                    <strong id="rlcXC">31.83 Ω</strong>
+                </div>
+                <div class="result">
+                    <small>|Z|</small>
+                    <strong id="rlcZ">10.00 Ω</strong>
+                </div>
+                <div class="result">
+                    <small>Ángulo θ</small>
+                    <strong id="rlcTheta">-2.35°</strong>
+                </div>
+                <div class="result">
+                    <small>Frecuencia resonante</small>
+                    <strong id="rlcResonance">50.33 Hz</strong>
+                </div>
+                <div class="result">
+                    <small>Comportamiento</small>
+                    <strong id="rlcBehavior">Capacitivo</strong>
+                </div>
+            </div>
+
+            <div class="tip" id="rlcExplanation">
+                La impedancia combina la resistencia y la diferencia
+                entre las reactancias inductiva y capacitiva.
+            </div>
+        </section>
+    </aside>
+</main>
+
+<footer>
+    Ferdi IA · Asistente educativo de Física de Corriente Alterna
+</footer>
+
+<script>
+// ==========================================
+// CONFIGURACIÓN DEL CHAT
+// ==========================================
+
+const API_URL = "/api/chat";
+
+const chat = document.getElementById("chat");
+const promptInput = document.getElementById("prompt");
+const sendButton = document.getElementById("send");
+const clearButton = document.getElementById("clear");
+
+const modelSelect = document.getElementById("model");
+const modeSelect = document.getElementById("mode");
+
+const STORAGE_KEY = "ferdi_ia_history";
+
+let messages = [];
+
+try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+
+    if (Array.isArray(saved)) {
+        messages = saved.filter(m =>
+            m &&
+            ["user", "assistant"].includes(m.role) &&
+            typeof m.content === "string"
+        );
+    }
+} catch {
+    messages = [];
+}
+
+function saveHistory() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+}
+
+
+function addMessage(role, content) {
+    const element = document.createElement("div");
+    element.className = "message " + role;
+
+    if (role === "assistant") {
+        // Convertir Markdown a HTML y proteger el contenido
+        // Detectar fórmulas encerradas entre corchetes
+        // y convertirlas a delimitadores compatibles con MathJax.
+        const normalizedContent = content.replace(
+            /\[\s*([^\[\]]*(?:\\[a-zA-Z]+|=|[_^])[^\[\]]*)\s*\]/g,
+            (match, formula) => {
+                return `$${formula.trim()}$`;
+            }
+        );
+
+        const html = marked.parse(normalizedContent);
+        element.innerHTML = DOMPurify.sanitize(html);
+    } else {
+        // Los mensajes del usuario se mantienen como texto
+        element.textContent = content;
+    }
+
+    chat.appendChild(element);
+    chat.scrollTop = chat.scrollHeight;
+
+    // Procesar las fórmulas matemáticas
+    if (role === "assistant" && window.MathJax) {
+        MathJax.typesetPromise([element])
+            .catch(error => {
+                console.error("Error al renderizar fórmulas:", error);
+            });
+    }
+
+    return element;
+}
+
+
+function renderHistory() {
+    for (const message of messages) {
+        addMessage(message.role, message.content);
+    }
+}
+
+renderHistory();
+
+// ==========================================
+// ENVÍO DE MENSAJES A PYTHON
+// ==========================================
+
+async function sendMessage() {
+    const text = promptInput.value.trim();
+
+    if (!text || sendButton.disabled) return;
+
+    promptInput.value = "";
+
+    messages.push({
+        role: "user",
+        content: text
+    });
+
+    addMessage("user", text);
+    saveHistory();
+
+    sendButton.disabled = true;
+
+    const loading = addMessage("system", "Ferdi IA está pensando...");
+
+    try {
+        const response = await fetch(API_URL, {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                messages: messages,
+                model: modelSelect.value,
+                mode: modeSelect.value,
+                temperature: Number(document.getElementById("temperature").value),
+                max_tokens: Number(document.getElementById("maxTokens").value)
+            })
+        });
+
+        const data = await response.json();
+
+        loading.remove();
+
+        if (!response.ok) {
+            throw new Error(data.error || "No se pudo obtener una respuesta.");
+        }
+
+        const answer = data.reply || data.response || data.message;
+
+        if (typeof answer !== "string" || !answer.trim()) {
+            throw new Error("El servidor no devolvió una respuesta válida.");
+        }
+
+        messages.push({
+            role: "assistant",
+            content: answer
+        });
+
+        addMessage("assistant", answer);
+        saveHistory();
+
+    } catch (error) {
+        loading.remove();
+
+        addMessage(
+            "assistant",
+            "No pude conectar con el servicio de IA.\n\n" +
+            error.message +
+            "\n\nComprueba que el servidor Python esté funcionando."
+        );
+
+    } finally {
+        sendButton.disabled = false;
+        promptInput.focus();
+    }
+}
+
+sendButton.addEventListener("click", sendMessage);
+
+promptInput.addEventListener("keydown", event => {
+    if (event.key === "Enter") {
+        sendMessage();
+    }
+});
+
+clearButton.addEventListener("click", () => {
+    messages = [];
+    saveHistory();
+
+    chat.innerHTML = "";
+
+    addMessage(
+        "assistant",
+        "Conversación reiniciada. ¿Qué tema de corriente alterna quieres estudiar?"
+    );
+});
+
+document.querySelectorAll(".quick-prompts button").forEach(button => {
+    button.addEventListener("click", () => {
+        promptInput.value = button.dataset.prompt;
+        sendMessage();
+    });
+});
+
+// ==========================================
+// FUNCIONES GENERALES PARA CANVAS
+// ==========================================
+
+function setupCanvas(canvas, context) {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    if (!width || !height) return null;
+
+    const dpr = window.devicePixelRatio || 1;
+
+    canvas.width = Math.round(width * dpr);
+    canvas.height = Math.round(height * dpr);
+
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+
+    return { width, height };
+}
+
+function drawArrow(context, x1, y1, x2, y2, color, label) {
+    const head = 8;
+    const angle = Math.atan2(y2 - y1, x2 - x1);
+
+    context.strokeStyle = color;
+    context.fillStyle = color;
+    context.lineWidth = 2.5;
+
+    context.beginPath();
+    context.moveTo(x1, y1);
+    context.lineTo(x2, y2);
+    context.stroke();
+
+    context.beginPath();
+    context.moveTo(x2, y2);
+
+    context.lineTo(
+        x2 - head * Math.cos(angle - Math.PI / 6),
+        y2 - head * Math.sin(angle - Math.PI / 6)
+    );
+
+    context.lineTo(
+        x2 - head * Math.cos(angle + Math.PI / 6),
+        y2 - head * Math.sin(angle + Math.PI / 6)
+    );
+
+    context.closePath();
+    context.fill();
+
+    context.font = "12px Arial";
+    context.fillText(label, x2 + 7, y2 - 7);
+}
+
+// ==========================================
+// LABORATORIO 1: ONDA SINUSOIDAL
+// ==========================================
+
+const canvas = document.getElementById("waveCanvas");
+const ctx = canvas.getContext("2d");
+
+const amplitude = document.getElementById("amplitude");
+const frequency = document.getElementById("frequency");
+const phase = document.getElementById("phase");
+
+function drawWave() {
+    const dimensions = setupCanvas(canvas, ctx);
+    if (!dimensions) return;
+
+    const { width, height } = dimensions;
+
+    const vm = Number(amplitude.value);
+    const f = Number(frequency.value);
+    const degrees = Number(phase.value);
+
+    const phi = degrees * Math.PI / 180;
+    const omega = 2 * Math.PI * f;
+    const period = 1 / f;
+    const rms = vm / Math.sqrt(2);
+
+    document.getElementById("amplitudeValue").textContent = vm + " V";
+    document.getElementById("frequencyValue").textContent = f + " Hz";
+    document.getElementById("phaseValue").textContent = degrees + "°";
+
+    document.getElementById("periodResult").textContent =
+        period.toFixed(5) + " s";
+
+    document.getElementById("omegaResult").textContent =
+        omega.toFixed(2) + " rad/s";
+
+    document.getElementById("rmsResult").textContent =
+        rms.toFixed(2) + " V";
+
+    document.getElementById("frequencyResult").textContent =
+        f + " Hz";
+
+    const centerY = height / 2;
+    const graphHeight = height * 0.36;
+    const duration = 2 / f;
+
+    // Cuadrícula
+    ctx.strokeStyle = "#26364e";
+    ctx.lineWidth = 1;
+
+    for (let x = 0; x <= width; x += width / 8) {
+        ctx.beginPath();
+        ctx.moveTo(x, 0);
+        ctx.lineTo(x, height);
+        ctx.stroke();
+    }
+
+    for (let y = 0; y <= height; y += height / 4) {
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+    }
+
+    // Eje horizontal
+    ctx.strokeStyle = "#8292aa";
+    ctx.beginPath();
+    ctx.moveTo(0, centerY);
+    ctx.lineTo(width, centerY);
+    ctx.stroke();
+
+    // Onda sinusoidal
+    ctx.strokeStyle = "#38bdf8";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+
+    for (let x = 0; x <= width; x++) {
+        const t = (x / width) * duration;
+        const voltage = vm * Math.sin(omega * t + phi);
+
+        const y = centerY - (voltage / vm) * graphHeight;
+
+        if (x === 0) {
+            ctx.moveTo(x, y);
+        } else {
+            ctx.lineTo(x, y);
+        }
+    }
+
+    ctx.stroke();
+
+    // Etiquetas
+    ctx.fillStyle = "#dbeafe";
+    ctx.font = "11px Arial";
+    ctx.fillText("+Vm", 7, centerY - graphHeight - 5);
+    ctx.fillText("-Vm", 7, centerY + graphHeight + 14);
+    ctx.fillText("0", 7, centerY - 7);
+    ctx.fillText("Tiempo →", width - 65, height - 9);
+}
+
+[amplitude, frequency, phase].forEach(input => {
+    input.addEventListener("input", drawWave);
+});
+
+// ==========================================
+// CÁLCULOS DEL CIRCUITO RLC
+// ==========================================
+
+function getRLCValues() {
+    const R = Number(document.getElementById("rlcR").value);
+    const L = Number(document.getElementById("rlcL").value) / 1000;
+    const C = Number(document.getElementById("rlcC").value) / 1000000;
+    const f = Number(document.getElementById("rlcF").value);
+
+    const omega = 2 * Math.PI * f;
+    const XL = omega * L;
+    const XC = 1 / (omega * C);
+
+    const netX = XL - XC;
+    const Z = Math.sqrt(R * R + netX * netX);
+    const theta = Math.atan2(netX, R) * 180 / Math.PI;
+    const fres = 1 / (2 * Math.PI * Math.sqrt(L * C));
+
+    return {
+        R, L, C, f, omega,
+        XL, XC, netX, Z, theta, fres
+    };
+}
+
+// ==========================================
+// LABORATORIO 2: DIAGRAMA FASORIAL
+// ==========================================
+
+const phasorCanvas = document.getElementById("phasorCanvas");
+const phasorCtx = phasorCanvas.getContext("2d");
+const phasorType = document.getElementById("phasorType");
+
+function drawPhasor() {
+    const dimensions = setupCanvas(phasorCanvas, phasorCtx);
+    if (!dimensions) return;
+
+    const { width, height } = dimensions;
+
+    const cx = width / 2;
+    const cy = height / 2;
+    const scale = Math.min(width, height) * 0.34;
+
+    let angle = 0;
+    const type = phasorType.value;
+    const vals = getRLCValues();
+
+    if (type === "L") angle = 90;
+    if (type === "C") angle = -90;
+
+    if (type === "RL") {
+        angle = Math.atan2(40, 30) * 180 / Math.PI;
+    }
+
+    if (type === "RC") {
+        angle = -Math.atan2(15, 20) * 180 / Math.PI;
+    }
+
+    if (type === "RLC") {
+        angle = vals.theta;
+    }
+
+    // Ejes
+    phasorCtx.strokeStyle = "#34445e";
+    phasorCtx.lineWidth = 1;
+
+    phasorCtx.beginPath();
+    phasorCtx.moveTo(15, cy);
+    phasorCtx.lineTo(width - 15, cy);
+    phasorCtx.moveTo(cx, 12);
+    phasorCtx.lineTo(cx, height - 12);
+    phasorCtx.stroke();
+
+    // Corriente de referencia
+    drawArrow(
+        phasorCtx,
+        cx, cy,
+        cx + scale, cy,
+        "#34d399",
+        "I (0°)"
+    );
+
+    // Voltaje
+    const rad = angle * Math.PI / 180;
+    const vx = cx + scale * Math.cos(rad);
+    const vy = cy - scale * Math.sin(rad);
+
+    drawArrow(
+        phasorCtx,
+        cx, cy,
+        vx, vy,
+        "#38bdf8",
+        "V"
+    );
+
+    phasorCtx.fillStyle = "#dbeafe";
+    phasorCtx.font = "11px Arial";
+    phasorCtx.fillText("Imaginario (+j)", 8, 16);
+    phasorCtx.fillText("Real", width - 38, height - 10);
+
+    document.getElementById("phasorAngle").textContent =
+        angle.toFixed(2) + "°";
+
+    let relation = "En fase";
+
+    if (angle > 0.5) relation = "V adelanta a I";
+    if (angle < -0.5) relation = "V atrasa respecto a I";
+
+    document.getElementById("phasorRelation").textContent = relation;
+}
+
+// ==========================================
+// LABORATORIO 3: SIMULADOR RLC SERIE
+// ==========================================
+
+const rlcInputs = ["rlcR", "rlcL", "rlcC", "rlcF"]
+    .map(id => document.getElementById(id));
+
+const rlcCanvas = document.getElementById("rlcCanvas");
+const rlcCtx = rlcCanvas.getContext("2d");
+
+function drawRLC() {
+    const v = getRLCValues();
+
+    // Mostrar valores de los controles
+    document.getElementById("rlcRValue").textContent = v.R + " Ω";
+
+    document.getElementById("rlcLValue").textContent =
+        (v.L * 1000).toFixed(0) + " mH";
+
+    document.getElementById("rlcCValue").textContent =
+        (v.C * 1000000).toFixed(0) + " μF";
+
+    document.getElementById("rlcFValue").textContent = v.f + " Hz";
+
+    // Mostrar cálculos
+    document.getElementById("rlcXL").textContent =
+        v.XL.toFixed(2) + " Ω";
+
+    document.getElementById("rlcXC").textContent =
+        v.XC.toFixed(2) + " Ω";
+
+    document.getElementById("rlcZ").textContent =
+        v.Z.toFixed(2) + " Ω";
+
+    document.getElementById("rlcTheta").textContent =
+        v.theta.toFixed(2) + "°";
+
+    document.getElementById("rlcResonance").textContent =
+        v.fres.toFixed(2) + " Hz";
+
+    // Identificar comportamiento
+    let behavior = "Resistivo";
+
+    if (v.netX > 0.01) behavior = "Inductivo";
+    if (v.netX < -0.01) behavior = "Capacitivo";
+
+    document.getElementById("rlcBehavior").textContent = behavior;
+
+    document.getElementById("rlcExplanation").textContent =
+        behavior === "Resistivo"
+            ? "El circuito está cerca de la resonancia: XL y XC son aproximadamente iguales. La impedancia es principalmente resistiva."
+            : behavior === "Inductivo"
+                ? "XL es mayor que XC. El circuito tiene comportamiento inductivo y la tensión total adelanta a la corriente."
+                : "XC es mayor que XL. El circuito tiene comportamiento capacitivo y la tensión total atrasa respecto a la corriente.";
+
+    // Dibujar diagrama de impedancia
+    const dimensions = setupCanvas(rlcCanvas, rlcCtx);
+    if (!dimensions) return;
+
+    const { width, height } = dimensions;
+
+    const cx = width * 0.22;
+    const cy = height * 0.72;
+
+    const maxVal = Math.max(
+        v.R,
+        Math.abs(v.netX),
+        v.Z,
+        1
+    );
+
+    const scale = Math.min(
+        width * 0.52,
+        height * 0.52
+    ) / maxVal;
+
+    // Ejes
+    rlcCtx.strokeStyle = "#34445e";
+    rlcCtx.lineWidth = 1;
+
+    rlcCtx.beginPath();
+    rlcCtx.moveTo(12, cy);
+    rlcCtx.lineTo(width - 12, cy);
+    rlcCtx.moveTo(cx, 12);
+    rlcCtx.lineTo(cx, height - 12);
+    rlcCtx.stroke();
+
+    // Componente resistiva R
+    drawArrow(
+        rlcCtx,
+        cx, cy,
+        cx + v.R * scale, cy,
+        "#34d399",
+        "R"
+    );
+
+    // Componente reactiva XL - XC
+    const endX = cx + v.R * scale;
+    const endY = cy - v.netX * scale;
+
+    drawArrow(
+        rlcCtx,
+        endX, cy,
+        endX, endY,
+        "#a78bfa",
+        "XL-XC"
+    );
+
+    // Impedancia total
+    drawArrow(
+        rlcCtx,
+        cx, cy,
+        endX, endY,
+        "#38bdf8",
+        "Z"
+    );
+
+    rlcCtx.fillStyle = "#dbeafe";
+    rlcCtx.font = "11px Arial";
+    rlcCtx.fillText("Diagrama de impedancia (Ω)", 12, 16);
+
+    // Actualizar también el fasor RLC
+    drawPhasor();
+}
+
+// ==========================================
+// ACTUALIZACIÓN DE LOS GRÁFICOS
+// ==========================================
+
+[...rlcInputs, phasorType].forEach(input => {
+    input.addEventListener("input", drawRLC);
+    input.addEventListener("change", drawRLC);
+});
+
+window.addEventListener("resize", () => {
+    drawWave();
+    drawRLC();
+});
+
+// Dibujo inicial
+drawWave();
+drawRLC();
+
+</script>
+
+</body>
+</html>
