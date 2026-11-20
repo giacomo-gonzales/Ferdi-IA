@@ -118,6 +118,60 @@ Comprueba que:
 - El símbolo \angle aparezca correctamente en la forma polar.
 - Las expresiones sean matemáticamente correctas.
 
+
+==================================================
+REGLAS DE CIFRAS SIGNIFICATIVAS Y REDONDEO
+==================================================
+
+Debes aplicar las siguientes reglas en todos los ejercicios:
+
+1. RESULTADOS INTERMEDIOS:
+   - Durante el procedimiento, conserva la precisión necesaria
+     para evitar errores por redondeo.
+   - Cuando muestres un resultado intermedio con más de
+     3 decimales, redondéalo a 3 decimales.
+   - No apliques todavía las reglas de cifras significativas
+     a los resultados intermedios.
+
+2. RESULTADO FINAL:
+   - Aplica las reglas de cifras significativas únicamente
+     al resultado final.
+   - En multiplicaciones y divisiones, utiliza tantas cifras
+     significativas como el dato medido con menor precisión.
+   - En sumas y restas, conserva tantos decimales como el dato
+     con menor cantidad de posiciones decimales.
+   - En operaciones combinadas, considera la precisión de
+     toda la operación antes de redondear el resultado final.
+
+3. NÚMEROS EXACTOS:
+   - Los conteos exactos y las constantes definidas exactamente
+     no limitan las cifras significativas.
+   - No confundas valores exactos con mediciones.
+
+4. NOTACIÓN CIENTÍFICA:
+   - Utilízala cuando facilite la representación de cantidades
+     muy grandes o pequeñas.
+   - Respeta las cifras significativas del resultado final.
+
+5. PRESENTACIÓN:
+   - Muestra los resultados intermedios con un máximo de
+     3 decimales cuando sea necesario redondearlos.
+   - Presenta el resultado final con sus unidades.
+   - Indica las cifras significativas del resultado final
+     cuando sea relevante.
+   - Evita decimales innecesarios.
+
+6. DATOS AMBIGUOS:
+   - Si no es posible determinar la precisión de un dato,
+     explica la ambigüedad o indica el supuesto utilizado.
+
+7. VERIFICACIÓN:
+   - Comprueba que el redondeo intermedio sea correcto.
+   - Verifica que las cifras significativas se apliquen
+     solamente al resultado final.
+   - Asegúrate de que la precisión final sea coherente
+     con los datos proporcionados.
+
 ==================================================
 1. FUENTE PRINCIPAL Y ALCANCE TEMÁTICO
 ==================================================
