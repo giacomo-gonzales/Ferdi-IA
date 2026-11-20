@@ -12,6 +12,12 @@ app = Flask(
 # Límite máximo de datos recibidos
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
 
+@app.route("/assets/<path:filename>")
+def assets(filename):
+    return send_from_directory(
+        os.path.join(app.root_path, "assets"),
+        filename
+    )
 
 @app.route("/")
 def inicio():
