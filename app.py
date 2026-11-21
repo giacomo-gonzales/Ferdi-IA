@@ -10,7 +10,7 @@ app = Flask(
 )
 
 # Límite máximo de datos recibidos
-app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+app.config["MAX_CONTENT_LENGTH"] = 6 * 1024 * 1024
 
 @app.route("/assets/<path:filename>")
 def assets(filename):
@@ -56,18 +56,68 @@ def chat():
             "error": "El historial es demasiado largo."
         }), 400
 
+    
     # Validar el último mensaje
     last_message = messages[-1]
 
-    if (
-        not isinstance(last_message, dict)
-        or last_message.get("role") != "user"
-        or not isinstance(last_message.get("content"), str)
-        or not last_message["content"].strip()
-    ):
+    if not isinstance(last_message, dict) or last_message.get("role") != "user":
         return jsonify({
-            "error": "Escribe una pregunta válida."
+            "error": "El último mensaje debe ser del usuario."
         }), 400
+
+    content = last_message.get("content")
+
+    # Aceptar texto normal o contenido multimodal
+    if isinstance(content, str):
+        if not content.strip():
+            return jsonify({
+                "error": "Escribe una pregunta válida."
+            }), 400
+
+    elif isinstance(content, list):
+        if not content or len(content) > 2:
+            return jsonify({
+                "error": "El contenido del mensaje no es válido."
+            }), 400
+
+        for item in content:
+            if not isinstance(item, dict):
+                return jsonify({
+                    "error": "El contenido de la imagen no es válido."
+                }), 400
+
+            if item.get("type") == "text":
+                if not isinstance(item.get("text"), str):
+                    return jsonify({
+                        "error": "El texto adjunto no es válido."
+                    }), 400
+
+            elif item.get("type") == "image_url":
+                image_url = item.get("image_url")
+
+                if (
+                    not isinstance(image_url, dict)
+                    or not isinstance(image_url.get("url"), str)
+                    or not image_url["url"].startswith(
+                        ("data:image/jpeg;base64,",
+                        "data:image/png;base64,",
+                        "data:image/webp;base64,")
+                    )
+                ):
+                    return jsonify({
+                        "error": "La imagen adjunta no es válida."
+                    }), 400
+
+            else:
+                return jsonify({
+                    "error": "Tipo de contenido no permitido."
+                }), 400
+
+    else:
+        return jsonify({
+            "error": "El formato del mensaje no es válido."
+        }), 400
+
 
     model = data.get("model", "openai/gpt-oss-20b")
 
@@ -76,10 +126,10 @@ def chat():
 
     try:
         temperature = float(data.get("temperature", 0.4))
-        max_tokens = int(data.get("max_tokens", 1200))
+        max_tokens = int(data.get("max_tokens", 3000))
 
         temperature = max(0, min(temperature, 2))
-        max_tokens = max(64, min(max_tokens, 4096))
+        max_tokens = max(64, min(max_tokens, 8192))
 
         mode = data.get("mode", "both")
 

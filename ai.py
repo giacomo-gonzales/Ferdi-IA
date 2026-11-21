@@ -1,6 +1,8 @@
 
 import os
 import requests
+import base64
+import binascii
 
 from dotenv import load_dotenv
 
@@ -12,11 +14,14 @@ GROQ_MODEL = os.getenv("GROQ_MODEL", "openai/gpt-oss-20b")
 API_URL = "https://api.groq.com/openai/v1/chat/completions"
 
 ALLOWED_MODELS = [
-    "openai/gpt-oss-20b"
+    "openai/gpt-oss-20b",
+    "qwen/qwen3.8-27b"
 ]
 
+VISION_MODEL = "qwen/qwen3.8-27b"
 
-SYSTEM_PROMPT = """
+
+SYSTEM_PROMPT = r"""
 Eres FERDI IA, un tutor universitario especializado en
 Física Aplicada - Corriente Alterna (CA).
 
@@ -632,12 +637,60 @@ si el estudiante todavía está intentando resolverlo.
 
 
 
+def validar_imagen(data_url):
+
+    if not isinstance(data_url, str):
+        raise ValueError("La imagen no tiene un formato válido.")
+
+    try:
+        header, encoded = data_url.split(",", 1)
+    except ValueError:
+        raise ValueError("La imagen está incompleta.")
+
+    formatos = {
+        "data:image/jpeg;base64": "jpeg",
+        "data:image/png;base64": "png",
+        "data:image/webp;base64": "webp"
+    }
+
+    formato = formatos.get(header)
+
+    if not formato:
+        raise ValueError("Formato de imagen no permitido.")
+
+    try:
+        image_data = base64.b64decode(encoded, validate=True)
+    except (binascii.Error, ValueError):
+        raise ValueError("La codificación de la imagen es incorrecta.")
+
+    if not image_data:
+        raise ValueError("La imagen está vacía.")
+
+    if len(image_data) > 4 * 1024 * 1024:
+        raise ValueError("La imagen supera el límite de 4 MB.")
+
+    # Comprobar la firma real del archivo
+    firmas = {
+        "jpeg": image_data.startswith(b"\xff\xd8\xff"),
+        "png": image_data.startswith(b"\x89PNG\r\n\x1a\n"),
+        "webp": (
+            len(image_data) >= 12
+            and image_data.startswith(b"RIFF")
+            and image_data[8:12] == b"WEBP"
+        )
+    }
+
+    if not firmas[formato]:
+        raise ValueError("El contenido no coincide con su formato declarado.")
+
+    return True
+
 def consultar_ia(
     messages,
     model=None,
     mode="both",
     temperature=0.4,
-    max_tokens=1500
+    max_tokens=4096
 ):
 
     if not GROQ_API_KEY:
@@ -645,11 +698,29 @@ def consultar_ia(
             "No se encontró GROQ_API_KEY. Revisa el archivo .env."
         )
 
+    
     # Seleccionar un modelo permitido
     selected_model = model or GROQ_MODEL
 
     if selected_model not in ALLOWED_MODELS:
         selected_model = GROQ_MODEL
+
+    # Detectar si la conversación contiene imágenes
+    has_image = any(
+        isinstance(message, dict)
+        and isinstance(message.get("content"), list)
+        and any(
+            isinstance(item, dict)
+            and item.get("type") == "image_url"
+            for item in message["content"]
+        )
+        for message in messages
+    )
+
+    # Utilizar el modelo de visión cuando haya imágenes
+    if has_image:
+        selected_model = VISION_MODEL
+
 
     # Seleccionar modo de aprendizaje
     mode_instruction = MODE_INSTRUCTIONS.get(
@@ -664,6 +735,7 @@ def consultar_ia(
         }
     ]
 
+    
     # Validar y preparar el historial
     if not isinstance(messages, list):
         messages = []
@@ -679,18 +751,82 @@ def consultar_ia(
         if role not in ("user", "assistant"):
             continue
 
-        if not isinstance(content, str):
-            continue
+        # Mensajes de texto normales
+        if isinstance(content, str):
 
-        content = content.strip()
+            content = content.strip()
 
-        if not content:
-            continue
+            if not content:
+                continue
 
-        conversation.append({
-            "role": role,
-            "content": content[:12000]
-        })
+            conversation.append({
+                "role": role,
+                "content": content[:12000]
+            })
+
+        # Mensajes multimodales con imágenes
+        elif isinstance(content, list) and role == "user":
+
+            if not content or len(content) > 2:
+                continue
+
+            valid_content = []
+            valid_message = True
+
+            for item in content:
+
+                if not isinstance(item, dict):
+                    valid_message = False
+                    break
+
+                if item.get("type") == "text":
+
+                    text = item.get("text")
+
+                    if not isinstance(text, str):
+                        valid_message = False
+                        break
+
+                    valid_content.append({
+                        "type": "text",
+                        "text": text[:12000]
+                    })
+
+                elif item.get("type") == "image_url":
+
+                    image_url = item.get("image_url")
+
+                    if (
+                        not isinstance(image_url, dict)
+                        or not isinstance(image_url.get("url"), str)
+                        or not image_url["url"].startswith(
+                            ("data:image/jpeg;base64,",
+                             "data:image/png;base64,",
+                             "data:image/webp;base64,")
+                        )
+                    ):
+                        valid_message = False
+                        break
+
+                    validar_imagen(image_url["url"])
+
+                    valid_content.append({
+                        "type": "image_url",
+                        "image_url": {
+                            "url": image_url["url"]
+                        }
+                    })
+
+                else:
+                    valid_message = False
+                    break
+
+            if valid_message and valid_content:
+                conversation.append({
+                    "role": role,
+                    "content": valid_content
+                })
+
 
     # Validar parámetros numéricos
     try:
@@ -701,7 +837,7 @@ def consultar_ia(
     try:
         max_tokens = int(max_tokens)
     except (TypeError, ValueError):
-        max_tokens = 1500
+        max_tokens = 4096
 
     temperature = max(0.0, min(temperature, 2.0))
     max_tokens = max(64, min(max_tokens, 4096))
@@ -730,6 +866,8 @@ def consultar_ia(
         response.raise_for_status()
 
         data = response.json()
+        print("RESPUESTA COMPLETA DE GROQ:")
+        print(data)
 
         answer = data["choices"][0]["message"]["content"]
 

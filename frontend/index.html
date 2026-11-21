@@ -242,6 +242,43 @@ select, input[type="number"] {
     font-size: 14px;
 }
 
+/* Adjuntar imágenes */
+.attach-button {
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    color: var(--accent);
+    padding: 11px 14px;
+    border-radius: 9px;
+    cursor: pointer;
+}
+
+.attach-button:hover {
+    background: #183b27;
+}
+
+.image-preview {
+    display: none;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+    padding: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+}
+
+.image-preview img {
+    width: 75px;
+    height: 75px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.image-preview button {
+    background: #26352c;
+    padding: 8px 12px;
+}
+
 button {
     border: none;
     border-radius: 9px;
@@ -444,7 +481,7 @@ footer {
             <div class="field">
                 <label for="maxTokens">Máx. tokens</label>
                 <input id="maxTokens" type="number"
-                    min="64" max="4096" value="1500">
+                    min="64" max="4096" value="4096">
             </div>
         </div>
 
@@ -465,10 +502,23 @@ Puedo ayudarte con:
         </div>
 
         <div class="composer">
+            <input type="file" id="imageInput" accept="image/png, image/jpeg, image/webp" hidden>
+
+            <button id="attachImage" class="attach-button" type="button" title="Adjuntar imagen">
+                <span>📎</span>
+            </button>
+
             <input id="prompt" type="text"
                 placeholder="Escribe tu pregunta de Física..."
                 autocomplete="off">
+
             <button id="send">Enviar</button>
+        </div>
+
+        <div id="imagePreview" class="image-preview">
+            <img id="previewImg" src="" alt="Vista previa">
+            <span id="imageName"></span>
+            <button id="removeImage" type="button">Quitar</button>
         </div>
 
         <div class="quick-prompts">
@@ -680,6 +730,63 @@ const API_URL = "/api/chat";
 const chat = document.getElementById("chat");
 const promptInput = document.getElementById("prompt");
 const sendButton = document.getElementById("send");
+// Elementos para adjuntar imágenes
+const imageInput = document.getElementById("imageInput");
+const attachImageButton = document.getElementById("attachImage");
+const imagePreview = document.getElementById("imagePreview");
+const previewImg = document.getElementById("previewImg");
+const imageName = document.getElementById("imageName");
+const removeImageButton = document.getElementById("removeImage");
+
+let selectedImage = null;
+
+// Abrir selector de imágenes
+attachImageButton.addEventListener("click", () => {
+    imageInput.click();
+});
+
+// Seleccionar imagen
+imageInput.addEventListener("change", () => {
+    const file = imageInput.files[0];
+
+    if (!file) return;
+
+    const allowedTypes = [
+        "image/jpeg",
+        "image/png",
+        "image/webp"
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+        alert("Formato no permitido. Usa JPG, PNG o WEBP.");
+        imageInput.value = "";
+        return;
+    }
+
+    if (file.size > 4 * 1024 * 1024) {
+        alert("La imagen no puede superar los 4 MB.");
+        imageInput.value = "";
+        return;
+    }
+
+    selectedImage = file;
+
+    previewImg.src = URL.createObjectURL(file);
+    imageName.textContent = file.name;
+    imagePreview.style.display = "flex";
+});
+
+// Quitar imagen
+removeImageButton.addEventListener("click", () => {
+    selectedImage = null;
+    imageInput.value = "";
+
+    URL.revokeObjectURL(previewImg.src);
+    previewImg.src = "";
+
+    imagePreview.style.display = "none";
+    imageName.textContent = "";
+});
 const clearButton = document.getElementById("clear");
 
 const modelSelect = document.getElementById("model");
@@ -757,33 +864,71 @@ renderHistory();
 // ENVÍO DE MENSAJES A PYTHON
 // ==========================================
 
+
 async function sendMessage() {
     const text = promptInput.value.trim();
 
-    if (!text || sendButton.disabled) return;
+    if ((!text && !selectedImage) || sendButton.disabled) return;
 
     promptInput.value = "";
-
-    messages.push({
-        role: "user",
-        content: text
-    });
-
-    addMessage("user", text);
-    saveHistory();
-
     sendButton.disabled = true;
 
     const loading = addMessage("system", "Ferdi IA está pensando...");
 
     try {
+        // Preparar el mensaje del usuario
+        let userContent = text || "Analiza esta imagen y explícame lo que observas.";
+
+        if (selectedImage) {
+            const imageBase64 = await new Promise((resolve, reject) => {
+                const reader = new FileReader();
+
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = () => reject(
+                    new Error("No se pudo leer la imagen.")
+                );
+
+                reader.readAsDataURL(selectedImage);
+            });
+
+            userContent = [
+                {
+                    type: "text",
+                    text: userContent
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: imageBase64
+                    }
+                }
+            ];
+        }
+
+        // Mantener el historial local únicamente con texto
+        messages.push({
+            role: "user",
+            content: text || "[Imagen adjunta]"
+        });
+
+        addMessage("user", text || "📎 Imagen adjunta");
+        saveHistory();
+
+        // Crear historial compatible con el envío de imágenes
+        const apiMessages = messages.slice(0, -1);
+
+        apiMessages.push({
+            role: "user",
+            content: userContent
+        });
+
         const response = await fetch(API_URL, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
             },
             body: JSON.stringify({
-                messages: messages,
+                messages: apiMessages,
                 model: modelSelect.value,
                 mode: modeSelect.value,
                 temperature: Number(document.getElementById("temperature").value),
@@ -813,14 +958,25 @@ async function sendMessage() {
         addMessage("assistant", answer);
         saveHistory();
 
+        // Limpiar imagen después del envío exitoso
+        if (selectedImage) {
+            selectedImage = null;
+            imageInput.value = "";
+
+            URL.revokeObjectURL(previewImg.src);
+            previewImg.src = "";
+
+            imagePreview.style.display = "none";
+            imageName.textContent = "";
+        }
+
     } catch (error) {
         loading.remove();
 
         addMessage(
             "assistant",
-            "No pude conectar con el servicio de IA.\n\n" +
-            error.message +
-            "\n\nComprueba que el servidor Python esté funcionando."
+            "No pude procesar tu solicitud.\n\n" +
+            error.message
         );
 
     } finally {
@@ -828,6 +984,7 @@ async function sendMessage() {
         promptInput.focus();
     }
 }
+
 
 sendButton.addEventListener("click", sendMessage);
 
