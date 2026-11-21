@@ -740,7 +740,7 @@ def consultar_ia(
     if not isinstance(messages, list):
         messages = []
 
-    for message in messages[-30:]:
+    for message in messages[-10:]:
 
         if not isinstance(message, dict):
             continue
